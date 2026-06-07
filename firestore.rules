@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function email() {
+      return request.auth.token.email.lower();
+    }
+
+    function isOwner() {
+      return signedIn() && email() == "linang@garena.com";
+    }
+
+    function role() {
+      return isOwner()
+        ? "owner"
+        : get(/databases/$(database)/documents/roles/$(email())).data.role;
+    }
+
+    function isAuthorized() {
+      return isOwner() || exists(/databases/$(database)/documents/roles/$(email()));
+    }
+
+    function canEdit() {
+      return isOwner() || role() == "admin";
+    }
+
+    match /roles/{roleEmail} {
+      allow read: if isOwner() || (signedIn() && roleEmail == email());
+      allow create, update: if isOwner()
+        && roleEmail != "linang@garena.com"
+        && request.resource.data.role in ["admin", "user"];
+      allow delete: if isOwner() && roleEmail != "linang@garena.com";
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if isAuthorized()
+        && (resource.data.status == "final" || canEdit());
+      allow create, update: if canEdit()
+        && request.resource.data.status in ["draft", "final"];
+      allow delete: if isOwner();
+    }
+  }
+}

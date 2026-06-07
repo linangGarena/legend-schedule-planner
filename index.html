@@ -476,14 +476,11 @@
 
   <template id="loginTemplate">
     <section class="login">
-      <form class="login-panel" id="loginForm">
-        <h2>Email 登入</h2>
-        <label>Email
-          <input id="emailInput" type="email" value="linang@garena.com" autocomplete="email" required>
-        </label>
-        <button class="primary" type="submit">登入</button>
-        <div class="status">第一版為前端模擬登入；正式版可接 Email OAuth 與資料庫權限。</div>
-      </form>
+      <div class="login-panel">
+        <h2>Google 登入</h2>
+        <button class="primary" id="googleLoginBtn" type="button">使用 Google 登入</button>
+        <div class="status" id="loginMessage">正式版使用 Firebase Authentication 與 Firestore 權限。</div>
+      </div>
     </section>
   </template>
 
@@ -803,15 +800,51 @@
     </section>
   </template>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signInWithPopup,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      collection,
+      deleteDoc,
+      doc,
+      getDoc,
+      getDocs,
+      getFirestore,
+      orderBy,
+      query,
+      serverTimestamp,
+      setDoc,
+      where
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqpETshEOhNUrdNIG2XMFJ6zteqjqoGG0",
+      authDomain: "legend-schedule-planner-76981.firebaseapp.com",
+      projectId: "legend-schedule-planner-76981",
+      storageBucket: "legend-schedule-planner-76981.firebasestorage.app",
+      messagingSenderId: "805842303585",
+      appId: "1:805842303585:web:6bfa78e7a9583cb6134820",
+      measurementId: "G-ZFZ55FBCC1"
+    };
+
     const OWNER_EMAIL = "linang@garena.com";
-    const STORE_KEY = "arena_schedule_tool_v1";
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const db = getFirestore(firebaseApp);
+    const provider = new GoogleAuthProvider();
 
     const state = {
       currentEmail: "",
       currentView: "planner",
       planner: defaultPlanner(),
-      data: loadStore()
+      data: { roles: {}, schedules: [] },
+      ready: false
     };
 
     function defaultPlanner() {
@@ -851,23 +884,10 @@
       };
     }
 
-    function loadStore() {
-      const fallback = { roles: {}, schedules: [] };
-      try {
-        return { ...fallback, ...JSON.parse(localStorage.getItem(STORE_KEY) || "{}") };
-      } catch {
-        return fallback;
-      }
-    }
-
-    function saveStore() {
-      localStorage.setItem(STORE_KEY, JSON.stringify(state.data));
-    }
-
     function roleOf(email) {
       const normalized = (email || "").trim().toLowerCase();
       if (normalized === OWNER_EMAIL) return "owner";
-      return state.data.roles[normalized] || "user";
+      return state.data.roles[normalized] || "guest";
     }
 
     function canEdit() {
@@ -878,6 +898,10 @@
       return roleOf(state.currentEmail) === "owner";
     }
 
+    function isAuthorized() {
+      return roleOf(state.currentEmail) !== "guest";
+    }
+
     function uid() {
       return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
@@ -886,14 +910,79 @@
       return new Date().toLocaleString("zh-TW", { hour12: false });
     }
 
+    onAuthStateChanged(auth, async user => {
+      state.ready = false;
+      render();
+      if (!user?.email) {
+        state.currentEmail = "";
+        state.data = { roles: {}, schedules: [] };
+        state.ready = true;
+        render();
+        return;
+      }
+      state.currentEmail = user.email.trim().toLowerCase();
+      try {
+        await loadCloudData();
+        state.currentView = canEdit() ? "planner" : "search";
+      } catch (error) {
+        console.error(error);
+        state.data = { roles: {}, schedules: [] };
+      }
+      state.ready = true;
+      render();
+    });
+
+    async function loadCloudData() {
+      state.data = { roles: {}, schedules: [] };
+      if (state.currentEmail === OWNER_EMAIL) {
+        const roleDocs = await getDocs(collection(db, "roles"));
+        roleDocs.forEach(snapshot => state.data.roles[snapshot.id.toLowerCase()] = snapshot.data().role || "user");
+      } else {
+        const roleSnapshot = await getDoc(doc(db, "roles", state.currentEmail));
+        if (roleSnapshot.exists()) state.data.roles[state.currentEmail] = roleSnapshot.data().role || "user";
+      }
+      if (isAuthorized()) await loadSchedules();
+    }
+
+    async function loadSchedules() {
+      const q = canEdit()
+        ? query(collection(db, "schedules"), orderBy("updatedAtMillis", "desc"))
+        : query(collection(db, "schedules"), where("status", "==", "final"));
+      const snapshots = await getDocs(q);
+      state.data.schedules = snapshots.docs
+        .map(snapshot => ({ id: snapshot.id, ...snapshot.data() }))
+        .sort((a, b) => (b.updatedAtMillis || 0) - (a.updatedAtMillis || 0));
+    }
+
+    async function saveRole(email, role) {
+      await setDoc(doc(db, "roles", email), {
+        email,
+        role,
+        updatedAt: todayStamp(),
+        updatedAtMillis: Date.now(),
+        updatedBy: state.currentEmail,
+        serverUpdatedAt: serverTimestamp()
+      });
+      state.data.roles[email] = role;
+    }
+
+    async function removeRole(email) {
+      await deleteDoc(doc(db, "roles", email));
+      delete state.data.roles[email];
+    }
+
     function appEl() {
       return document.getElementById("app");
     }
 
     function render() {
       renderUserBox();
-      if (!state.currentEmail) {
+      if (!state.ready) {
+        appEl().innerHTML = `<section class="login"><div class="login-panel"><h2>載入中</h2><div class="status">正在確認登入狀態...</div></div></section>`;
+      } else if (!state.currentEmail) {
         renderLogin();
+      } else if (!isAuthorized()) {
+        renderUnauthorized();
       } else {
         renderWorkspace();
       }
@@ -910,20 +999,32 @@
         <span class="role-pill">${roleLabel(roleOf(state.currentEmail))}</span>
         <button id="logoutBtn">登出</button>
       `;
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        state.currentEmail = "";
-        render();
-      });
+      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
     }
 
     function renderLogin() {
       appEl().innerHTML = document.getElementById("loginTemplate").innerHTML;
-      document.getElementById("loginForm").addEventListener("submit", event => {
-        event.preventDefault();
-        state.currentEmail = document.getElementById("emailInput").value.trim().toLowerCase();
-        state.currentView = canEdit() ? "planner" : "search";
-        render();
+      document.getElementById("googleLoginBtn").addEventListener("click", async () => {
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (error) {
+          document.getElementById("loginMessage").className = "status danger";
+          document.getElementById("loginMessage").textContent = `登入失敗：${error.message}`;
+        }
       });
+    }
+
+    function renderUnauthorized() {
+      appEl().innerHTML = `
+        <section class="login">
+          <div class="login-panel">
+            <h2>尚未授權</h2>
+            <div class="status warn">${escapeHtml(state.currentEmail)} 尚未被加入此工具權限。請請擁有者加入角色後再登入。</div>
+            <button id="unauthorizedLogoutBtn">登出</button>
+          </div>
+        </section>
+      `;
+      document.getElementById("unauthorizedLogoutBtn").addEventListener("click", () => signOut(auth));
     }
 
     function renderWorkspace() {
@@ -1615,25 +1716,25 @@
       renderStats();
     }
 
-    function saveDraft() {
+    async function saveDraft() {
       syncFormToPlanner();
       if (!state.planner.seasonName) {
         showPlannerMessage("請先填寫賽季名稱。", "danger");
         return;
       }
       const item = snapshotPlanner("draft");
-      upsertSchedule(item);
+      await upsertSchedule(item);
       showPlannerMessage("已儲存為未確認版本。", "ok");
     }
 
-    function submitSchedule() {
+    async function submitSchedule() {
       syncFormToPlanner();
       if (!state.planner.schedule.length) {
         showPlannerMessage("請先產生或編輯賽程後再送出。", "danger");
         return;
       }
       const item = snapshotPlanner("final");
-      upsertSchedule(item);
+      await upsertSchedule(item);
       showPlannerMessage("已送出為最終版本，並加入賽程搜索。", "ok");
       renderSearchResults();
     }
@@ -1643,14 +1744,24 @@
       state.planner.id = id;
       state.planner.status = status;
       state.planner.updatedAt = todayStamp();
-      return JSON.parse(JSON.stringify({ ...state.planner, id, status, updatedAt: state.planner.updatedAt }));
+      return JSON.parse(JSON.stringify({
+        ...state.planner,
+        id,
+        status,
+        ownerEmail: state.currentEmail,
+        updatedAt: state.planner.updatedAt,
+        updatedAtMillis: Date.now()
+      }));
     }
 
-    function upsertSchedule(item) {
+    async function upsertSchedule(item) {
+      await setDoc(doc(db, "schedules", item.id), {
+        ...item,
+        serverUpdatedAt: serverTimestamp()
+      });
       const index = state.data.schedules.findIndex(schedule => schedule.id === item.id);
       if (index >= 0) state.data.schedules[index] = item;
       else state.data.schedules.unshift(item);
-      saveStore();
     }
 
     function renderStats() {
@@ -1941,12 +2052,11 @@
     function bindAdmin() {
       if (!document.getElementById("view-admin")) return;
       document.getElementById("currentRoleNote").value = `${state.currentEmail} / ${roleLabel(roleOf(state.currentEmail))}`;
-      document.getElementById("addRoleBtn").addEventListener("click", () => {
+      document.getElementById("addRoleBtn").addEventListener("click", async () => {
         const email = document.getElementById("roleEmail").value.trim().toLowerCase();
         const role = document.getElementById("roleSelect").value;
         if (!email || email === OWNER_EMAIL) return;
-        state.data.roles[email] = role;
-        saveStore();
+        await saveRole(email, role);
         renderRoles();
       });
       renderRoles();
@@ -1964,9 +2074,8 @@
         </tr>
       `).join("");
       body.querySelectorAll("[data-remove-role]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          delete state.data.roles[btn.dataset.removeRole];
-          saveStore();
+        btn.addEventListener("click", async () => {
+          await removeRole(btn.dataset.removeRole);
           renderRoles();
         });
       });
@@ -2014,7 +2123,7 @@
     }
 
     function roleLabel(role) {
-      return { owner: "擁有者", admin: "管理員", user: "使用者" }[role] || "使用者";
+      return { owner: "擁有者", admin: "管理員", user: "使用者", guest: "未授權" }[role] || "未授權";
     }
 
     function formatLabel(format) {
