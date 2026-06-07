@@ -1,0 +1,2035 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>傳說賽事賽程規劃</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #1d2430;
+      --muted: #6b7280;
+      --line: #d8dee8;
+      --primary: #146c94;
+      --primary-ink: #ffffff;
+      --accent: #d97706;
+      --danger: #b42318;
+      --ok: #16794c;
+      --soft: #eef6f8;
+      --warn: #fff7ed;
+      --shadow: 0 10px 24px rgba(23, 31, 42, .08);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      min-width: 320px;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 6px;
+      min-height: 36px;
+      padding: 7px 12px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--primary); }
+    button.primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+    button.warning { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    button.ghost { background: transparent; }
+    button.icon { width: 36px; padding: 0; display: inline-grid; place-items: center; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, .94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 12px 18px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .userbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: end;
+      font-size: 13px;
+    }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: var(--soft);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    main {
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .login {
+      min-height: calc(100vh - 73px);
+      display: grid;
+      align-items: center;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    .login-panel, .panel, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-panel {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .login-panel h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    nav {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      position: sticky;
+      top: 78px;
+    }
+
+    .nav-btn {
+      width: 100%;
+      justify-content: start;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      border-color: transparent;
+      background: transparent;
+      margin: 2px 0;
+    }
+
+    .nav-btn.active {
+      background: var(--soft);
+      color: var(--primary);
+      border-color: #c5dce4;
+      font-weight: 700;
+    }
+
+    .view {
+      display: none;
+      gap: 16px;
+    }
+
+    .view.active {
+      display: grid;
+    }
+
+    .panel {
+      padding: 16px;
+      box-shadow: none;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-head h2, .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .row-index {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      background: var(--soft);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      border: 0;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      min-height: 40px;
+    }
+
+    .tab.active {
+      border-bottom-color: var(--primary);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .hidden { display: none !important; }
+
+    .conditions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .condition {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: #fff;
+    }
+
+    .condition-line {
+      display: grid;
+      grid-template-columns: auto minmax(180px, 1fr) 150px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .checkline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .checkline input {
+      width: 18px;
+      height: 18px;
+      min-height: 18px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f0f3f6;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td input, td select {
+      min-height: 32px;
+      padding: 4px 7px;
+      min-width: 110px;
+    }
+
+    .status {
+      border-left: 4px solid var(--primary);
+      background: var(--soft);
+      padding: 10px 12px;
+      border-radius: 6px;
+      color: #224653;
+      font-size: 14px;
+    }
+
+    .status.warn {
+      border-left-color: var(--accent);
+      background: var(--warn);
+      color: #7c3f00;
+    }
+
+    .status.danger {
+      border-left-color: var(--danger);
+      background: #fff1f1;
+      color: var(--danger);
+    }
+
+    .status.ok {
+      border-left-color: var(--ok);
+      background: #edfdf5;
+      color: var(--ok);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      box-shadow: none;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .sheet-box {
+      font-family: Consolas, "Courier New", monospace;
+      white-space: pre;
+      overflow: auto;
+      min-height: 180px;
+    }
+
+    @media (max-width: 960px) {
+      .workspace { grid-template-columns: 1fr; }
+      nav {
+        position: static;
+        display: flex;
+        overflow: auto;
+      }
+      .nav-btn {
+        width: auto;
+        white-space: nowrap;
+      }
+      .grid.two, .grid.three, .grid.four { grid-template-columns: 1fr; }
+      .condition-line { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .topbar { grid-template-columns: 1fr; }
+      .userbox { justify-content: start; }
+      main { padding: 12px; }
+      .panel { padding: 12px; }
+      .brand h1 { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">賽</div>
+          <h1>傳說賽事賽程規劃</h1>
+        </div>
+        <div class="userbox" id="userBox"></div>
+      </div>
+    </header>
+
+    <main id="app"></main>
+  </div>
+
+  <template id="loginTemplate">
+    <section class="login">
+      <form class="login-panel" id="loginForm">
+        <h2>Email 登入</h2>
+        <label>Email
+          <input id="emailInput" type="email" value="linang@garena.com" autocomplete="email" required>
+        </label>
+        <button class="primary" type="submit">登入</button>
+        <div class="status">第一版為前端模擬登入；正式版可接 Email OAuth 與資料庫權限。</div>
+      </form>
+    </section>
+  </template>
+
+  <template id="workspaceTemplate">
+    <section class="workspace">
+      <nav id="nav"></nav>
+      <div>
+        <section class="view" id="view-planner">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>排賽程</h2>
+              <div class="toolbar">
+                <button class="primary" id="generateBtn">產生賽程</button>
+                <button id="saveDraftBtn">儲存</button>
+                <button class="warning" id="submitBtn">送出</button>
+              </div>
+            </div>
+            <div id="plannerMessage"></div>
+            <div class="grid two">
+              <label>賽程標題 / 賽季名稱
+                <input id="seasonName" placeholder="例如：GCS 2026 春季賽">
+              </label>
+              <label>賽制
+                <select id="formatSelect">
+                  <option value="single">單循環</option>
+                  <option value="double">雙循環</option>
+                  <option value="group-single">分組競賽單循環</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>參賽隊伍</h3>
+              <div class="toolbar">
+                <button id="addTeamBtn">新增</button>
+                <button id="loadCsvBtn">上傳 CSV</button>
+                <input id="csvInput" class="hidden" type="file" accept=".csv,text/csv">
+              </div>
+            </div>
+            <div id="teamList"></div>
+            <div class="status">隊伍排序會影響左右方安排。CSV 可使用單欄隊名，或每列第一欄為隊名。</div>
+          </div>
+
+          <div class="panel" id="groupPanel">
+            <div class="panel-head">
+              <h3>分組設定</h3>
+            </div>
+            <div class="grid three">
+              <label>分組方式
+                <select id="groupMode">
+                  <option value="random">隨機分組</option>
+                  <option value="manual">指定分組</option>
+                </select>
+              </label>
+              <label>每組隊伍數
+                <input id="groupSize" type="number" min="2" value="4">
+              </label>
+              <label>指定分組
+                <textarea id="manualGroups" placeholder="A:HKA,FW,BMG&#10;B:MOP,ONE,BRO"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>日期與場次</h3>
+              <button id="addExceptionBtn">新增例外日期</button>
+            </div>
+            <div class="grid three">
+              <label>新增比賽日期
+                <input id="matchDateInput" type="date">
+              </label>
+              <label>批次起始日期
+                <input id="rangeStartDate" type="date">
+              </label>
+              <label>批次結束日期
+                <input id="rangeEndDate" type="date">
+              </label>
+              <label>每日出賽場次數
+                <input id="matchesPerDay" type="number" min="1" value="2">
+              </label>
+              <label>已選日期
+                <select id="selectedDates" multiple size="5"></select>
+              </label>
+            </div>
+            <div class="toolbar" id="weekdayPicker" style="margin-top: 10px;">
+              <label class="checkline"><input type="checkbox" value="1" checked> 一</label>
+              <label class="checkline"><input type="checkbox" value="2" checked> 二</label>
+              <label class="checkline"><input type="checkbox" value="3" checked> 三</label>
+              <label class="checkline"><input type="checkbox" value="4" checked> 四</label>
+              <label class="checkline"><input type="checkbox" value="5" checked> 五</label>
+              <label class="checkline"><input type="checkbox" value="6"> 六</label>
+              <label class="checkline"><input type="checkbox" value="0"> 日</label>
+            </div>
+            <div class="toolbar" style="margin-top: 10px;">
+              <button id="addDateBtn">加入單日</button>
+              <button id="addDateRangeBtn">批次加入</button>
+              <button id="removeDateBtn">移除選取日期</button>
+            </div>
+            <div id="exceptionsList" style="margin-top: 12px;"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>其他條件</h3>
+            </div>
+            <div class="conditions">
+              <div class="condition">
+                <div class="condition-line">
+                  <label class="checkline"><input id="limitWeekly" type="checkbox"> 同一週不得連續出賽 X 天以上</label>
+                  <label>X 天數
+                    <input id="limitWeeklyDays" type="number" min="2" value="3">
+                  </label>
+                  <label>條件強度
+                    <select id="limitWeeklyLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
+                  <label class="checkline"><input id="limitNextDayMatch1" type="checkbox"> X 隊伍若連續出賽兩天，第二天安排 Match1</label>
+                  <label>X 隊伍
+                    <select id="nextDayTeams" multiple size="5"></select>
+                  </label>
+                  <label>條件強度
+                    <select id="nextDayLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
+                  <label class="checkline"><input id="limitDoubleGap" type="checkbox"> 雙循環相同對戰組合需有間隔</label>
+                  <label>最少間隔出賽天數
+                    <input id="doubleGapDays" type="number" min="1" value="7">
+                  </label>
+                  <label>條件強度
+                    <select id="doubleGapLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
+                  <label class="checkline"><input id="limitPriority" type="checkbox"> X 隊伍優先安排在 Y 日期 MatchZ</label>
+                  <div class="grid three">
+                    <label>X 隊伍
+                      <select id="priorityTeams" multiple size="5"></select>
+                    </label>
+                    <label>Y 日期
+                      <select id="priorityDates" multiple size="5"></select>
+                    </label>
+                    <label>MatchZ
+                      <input id="priorityMatch" type="number" min="1" value="1">
+                    </label>
+                  </div>
+                  <label>條件強度
+                    <select id="priorityLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="toolbar">
+                  <button id="addPriorityRuleBtn">新增排列組合</button>
+                </div>
+                <div id="priorityRulesList"></div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
+                  <label class="checkline"><input id="limitMatchBalance" type="checkbox"> 每支隊伍參與的 MatchX 要平均（+-2 以內）</label>
+                  <label>容許差距
+                    <input id="matchBalanceTolerance" type="number" min="0" value="2">
+                  </label>
+                  <label>條件強度
+                    <select id="matchBalanceLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
+                  <div>自訂需求</div>
+                  <div class="grid three">
+                    <label>X 隊伍
+                      <select id="customTeams" multiple size="5"></select>
+                    </label>
+                    <label>Y 日期
+                      <select id="customDates" multiple size="5"></select>
+                    </label>
+                    <label>MatchZ
+                      <input id="customMatch" type="number" min="1" placeholder="可空白">
+                    </label>
+                  </div>
+                  <label>條件強度
+                    <select id="customLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="grid two">
+                  <label>需求文字
+                    <textarea id="customText" placeholder="例如：HKA 希望避開開幕日，或純文字備註"></textarea>
+                  </label>
+                  <div class="toolbar">
+                    <button id="addCustomRuleBtn">新增自訂需求</button>
+                  </div>
+                </div>
+                <div id="customRulesList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>賽程表</h3>
+              <div class="toolbar">
+                <button id="exportCsvBtn">匯出 CSV</button>
+                <button id="copySheetBtn">複製 Google Sheet 資料</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>日期</th>
+                    <th>Match</th>
+                    <th>左方隊伍</th>
+                    <th>右方隊伍</th>
+                    <th>輪次</th>
+                    <th>組別</th>
+                    <th>備註</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>檢查資料</h3>
+              <button id="refreshStatsBtn">更新統計</button>
+            </div>
+            <div id="stats" class="stats-grid"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Google Sheet 貼上資料</h3>
+            </div>
+            <textarea id="sheetOutput" class="sheet-box" readonly></textarea>
+          </div>
+        </section>
+
+        <section class="view" id="view-search">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>賽程搜索</h2>
+            </div>
+            <label>賽季名稱
+              <input id="searchInput" placeholder="輸入賽季名稱">
+            </label>
+          </div>
+          <div class="cards" id="searchResults"></div>
+          <div class="panel hidden" id="searchDetail"></div>
+        </section>
+
+        <section class="view" id="view-admin">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>權限管理</h2>
+              <button class="primary" id="addRoleBtn">新增 / 更新</button>
+            </div>
+            <div class="grid three">
+              <label>Email
+                <input id="roleEmail" type="email" placeholder="user@example.com">
+              </label>
+              <label>身份
+                <select id="roleSelect">
+                  <option value="admin">管理員</option>
+                  <option value="user">使用者</option>
+                </select>
+              </label>
+              <label>目前登入
+                <input id="currentRoleNote" readonly>
+              </label>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>身份清單</h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Email</th><th>身份</th><th>操作</th></tr></thead>
+                <tbody id="rolesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </template>
+
+  <script>
+    const OWNER_EMAIL = "linang@garena.com";
+    const STORE_KEY = "arena_schedule_tool_v1";
+
+    const state = {
+      currentEmail: "",
+      currentView: "planner",
+      planner: defaultPlanner(),
+      data: loadStore()
+    };
+
+    function defaultPlanner() {
+      return {
+        id: "",
+        status: "draft",
+        seasonName: "",
+        format: "single",
+        teams: ["HKA", "FW", "BMG", "MOP"],
+        dates: [],
+        matchesPerDay: 2,
+        exceptions: {},
+        groupMode: "random",
+        groupSize: 4,
+        manualGroups: "",
+        conditions: {
+          limitWeekly: false,
+          limitWeeklyDays: 3,
+          limitWeeklyLevel: "required",
+          limitNextDayMatch1: false,
+          nextDayTeams: [],
+          nextDayLevel: "required",
+          limitDoubleGap: false,
+          doubleGapDays: 7,
+          doubleGapLevel: "required",
+          limitPriority: false,
+          priorityRules: [],
+          priorityMatch: 1,
+          priorityLevel: "required",
+          limitMatchBalance: false,
+          matchBalanceTolerance: 2,
+          matchBalanceLevel: "best",
+          customRules: []
+        },
+        schedule: [],
+        updatedAt: ""
+      };
+    }
+
+    function loadStore() {
+      const fallback = { roles: {}, schedules: [] };
+      try {
+        return { ...fallback, ...JSON.parse(localStorage.getItem(STORE_KEY) || "{}") };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveStore() {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state.data));
+    }
+
+    function roleOf(email) {
+      const normalized = (email || "").trim().toLowerCase();
+      if (normalized === OWNER_EMAIL) return "owner";
+      return state.data.roles[normalized] || "user";
+    }
+
+    function canEdit() {
+      return ["owner", "admin"].includes(roleOf(state.currentEmail));
+    }
+
+    function canManageRoles() {
+      return roleOf(state.currentEmail) === "owner";
+    }
+
+    function uid() {
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function todayStamp() {
+      return new Date().toLocaleString("zh-TW", { hour12: false });
+    }
+
+    function appEl() {
+      return document.getElementById("app");
+    }
+
+    function render() {
+      renderUserBox();
+      if (!state.currentEmail) {
+        renderLogin();
+      } else {
+        renderWorkspace();
+      }
+    }
+
+    function renderUserBox() {
+      const box = document.getElementById("userBox");
+      if (!state.currentEmail) {
+        box.innerHTML = "";
+        return;
+      }
+      box.innerHTML = `
+        <span>${escapeHtml(state.currentEmail)}</span>
+        <span class="role-pill">${roleLabel(roleOf(state.currentEmail))}</span>
+        <button id="logoutBtn">登出</button>
+      `;
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        state.currentEmail = "";
+        render();
+      });
+    }
+
+    function renderLogin() {
+      appEl().innerHTML = document.getElementById("loginTemplate").innerHTML;
+      document.getElementById("loginForm").addEventListener("submit", event => {
+        event.preventDefault();
+        state.currentEmail = document.getElementById("emailInput").value.trim().toLowerCase();
+        state.currentView = canEdit() ? "planner" : "search";
+        render();
+      });
+    }
+
+    function renderWorkspace() {
+      state.planner = normalizePlanner(state.planner);
+      appEl().innerHTML = document.getElementById("workspaceTemplate").innerHTML;
+      renderNav();
+      bindPlanner();
+      bindSearch();
+      bindAdmin();
+      switchView(state.currentView);
+      if (!canEdit()) {
+        document.getElementById("view-planner").remove();
+      }
+      if (!canManageRoles()) {
+        document.getElementById("view-admin").remove();
+      }
+    }
+
+    function normalizePlanner(planner) {
+      const base = defaultPlanner();
+      const merged = { ...base, ...planner, conditions: { ...base.conditions, ...(planner.conditions || {}) } };
+      if (merged.conditions.nextDayTeam && !merged.conditions.nextDayTeams.length) {
+        merged.conditions.nextDayTeams = [merged.conditions.nextDayTeam];
+      }
+      if (merged.conditions.priorityTeam && merged.conditions.priorityDate && !merged.conditions.priorityRules.length) {
+        merged.conditions.priorityRules = [{
+          id: uid(),
+          teams: [merged.conditions.priorityTeam],
+          dates: [merged.conditions.priorityDate],
+          match: merged.conditions.priorityMatch || 1,
+          level: merged.conditions.priorityLevel || "required"
+        }];
+      }
+      if (!Array.isArray(merged.conditions.priorityRules)) merged.conditions.priorityRules = [];
+      if (!Array.isArray(merged.conditions.customRules)) merged.conditions.customRules = [];
+      if (!Array.isArray(merged.conditions.nextDayTeams)) merged.conditions.nextDayTeams = [];
+      return merged;
+    }
+
+    function renderNav() {
+      const nav = document.getElementById("nav");
+      const items = [];
+      if (canEdit()) items.push(["planner", "排賽程"]);
+      items.push(["search", "賽程搜索"]);
+      if (canManageRoles()) items.push(["admin", "權限管理"]);
+      nav.innerHTML = items.map(([id, label]) => `<button class="nav-btn" data-view="${id}">${label}</button>`).join("");
+      nav.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => switchView(btn.dataset.view));
+      });
+      if (!items.some(item => item[0] === state.currentView)) state.currentView = items[0][0];
+    }
+
+    function switchView(view) {
+      state.currentView = view;
+      document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+      const target = document.getElementById(`view-${view}`);
+      if (target) target.classList.add("active");
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === view);
+      });
+      if (view === "search") renderSearchResults();
+      if (view === "admin") renderRoles();
+    }
+
+    function bindPlanner() {
+      if (!document.getElementById("view-planner")) return;
+      syncPlannerToForm();
+      renderTeams();
+      renderDates();
+      renderExceptions();
+      renderPriorityRules();
+      renderCustomRules();
+      renderSchedule();
+      renderStats();
+      updateGroupVisibility();
+
+      document.getElementById("seasonName").addEventListener("input", e => state.planner.seasonName = e.target.value);
+      document.getElementById("formatSelect").addEventListener("change", e => {
+        state.planner.format = e.target.value;
+        updateGroupVisibility();
+      });
+      document.getElementById("groupMode").addEventListener("change", e => state.planner.groupMode = e.target.value);
+      document.getElementById("groupSize").addEventListener("input", e => state.planner.groupSize = Number(e.target.value) || 2);
+      document.getElementById("manualGroups").addEventListener("input", e => state.planner.manualGroups = e.target.value);
+      document.getElementById("matchesPerDay").addEventListener("input", e => state.planner.matchesPerDay = Math.max(1, Number(e.target.value) || 1));
+
+      document.getElementById("addTeamBtn").addEventListener("click", () => {
+        state.planner.teams.push("");
+        renderTeams();
+      });
+      document.getElementById("loadCsvBtn").addEventListener("click", () => document.getElementById("csvInput").click());
+      document.getElementById("csvInput").addEventListener("change", readTeamCsv);
+      document.getElementById("addDateBtn").addEventListener("click", addDate);
+      document.getElementById("addDateRangeBtn").addEventListener("click", addDateRange);
+      document.getElementById("removeDateBtn").addEventListener("click", removeSelectedDates);
+      document.getElementById("addExceptionBtn").addEventListener("click", addException);
+      document.getElementById("addPriorityRuleBtn").addEventListener("click", addPriorityRule);
+      document.getElementById("addCustomRuleBtn").addEventListener("click", addCustomRule);
+      document.getElementById("generateBtn").addEventListener("click", generateSchedule);
+      document.getElementById("saveDraftBtn").addEventListener("click", saveDraft);
+      document.getElementById("submitBtn").addEventListener("click", submitSchedule);
+      document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+      document.getElementById("copySheetBtn").addEventListener("click", copySheetData);
+      document.getElementById("refreshStatsBtn").addEventListener("click", renderStats);
+
+      Object.keys(state.planner.conditions).forEach(key => {
+        const el = document.getElementById(key);
+        if (!el) return;
+        const eventName = el.tagName === "SELECT" || el.type === "checkbox" ? "change" : "input";
+        el.addEventListener(eventName, () => {
+          state.planner.conditions[key] = el.multiple ? getSelectedValues(el) : el.type === "checkbox" ? el.checked : coerceConditionValue(key, el.value);
+        });
+      });
+    }
+
+    function syncPlannerToForm() {
+      const p = state.planner;
+      document.getElementById("seasonName").value = p.seasonName;
+      document.getElementById("formatSelect").value = p.format;
+      document.getElementById("groupMode").value = p.groupMode;
+      document.getElementById("groupSize").value = p.groupSize;
+      document.getElementById("manualGroups").value = p.manualGroups;
+      document.getElementById("matchesPerDay").value = p.matchesPerDay;
+      Object.entries(p.conditions).forEach(([key, value]) => {
+        const el = document.getElementById(key);
+        if (!el) return;
+        if (el.type === "checkbox") el.checked = Boolean(value);
+        else if (el.multiple) setSelectedValues(el, Array.isArray(value) ? value : value ? [value] : []);
+        else el.value = value;
+      });
+      syncTeamSelects();
+      syncDateSelects();
+    }
+
+    function coerceConditionValue(key, value) {
+      if (["limitWeeklyDays", "doubleGapDays", "priorityMatch", "matchBalanceTolerance", "customMatch"].includes(key)) return value === "" ? "" : Number(value) || 1;
+      return value;
+    }
+
+    function updateGroupVisibility() {
+      document.getElementById("groupPanel").classList.toggle("hidden", state.planner.format !== "group-single");
+    }
+
+    function renderTeams() {
+      const list = document.getElementById("teamList");
+      list.innerHTML = state.planner.teams.map((team, index) => `
+        <div class="row">
+          <span class="row-index">${index + 1}</span>
+          <input data-team-index="${index}" value="${escapeAttr(team)}" placeholder="隊伍名稱">
+          <button class="icon danger" title="移除" data-remove-team="${index}">×</button>
+        </div>
+      `).join("");
+      list.querySelectorAll("[data-team-index]").forEach(input => {
+        input.addEventListener("input", () => {
+          state.planner.teams[Number(input.dataset.teamIndex)] = input.value;
+          syncTeamSelects();
+        });
+      });
+      list.querySelectorAll("[data-remove-team]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.planner.teams.splice(Number(btn.dataset.removeTeam), 1);
+          renderTeams();
+        });
+      });
+      syncTeamSelects();
+    }
+
+    function syncTeamSelects() {
+      const options = state.planner.teams.filter(Boolean).map(team => `<option value="${escapeAttr(team)}">${escapeHtml(team)}</option>`).join("");
+      ["nextDayTeams", "priorityTeams", "customTeams"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = getSelectedValues(el);
+        el.innerHTML = options;
+        setSelectedValues(el, current);
+      });
+    }
+
+    function syncDateSelects() {
+      const options = state.planner.dates.map(date => `<option value="${date}">${date}</option>`).join("");
+      ["priorityDates", "customDates"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = getSelectedValues(el);
+        el.innerHTML = options;
+        setSelectedValues(el, current);
+      });
+    }
+
+    function getSelectedValues(select) {
+      return Array.from(select.selectedOptions).map(option => option.value);
+    }
+
+    function setSelectedValues(select, values) {
+      const wanted = new Set(values);
+      Array.from(select.options).forEach(option => option.selected = wanted.has(option.value));
+    }
+
+    function readTeamCsv(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const teams = String(reader.result)
+          .split(/\r?\n/)
+          .map(line => line.split(",")[0].trim())
+          .filter(Boolean);
+        if (teams.length) {
+          state.planner.teams = teams;
+          renderTeams();
+          showPlannerMessage(`已載入 ${teams.length} 支隊伍。`, "ok");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      event.target.value = "";
+    }
+
+    function addDate() {
+      const value = document.getElementById("matchDateInput").value;
+      if (!value) return;
+      addDates([value]);
+    }
+
+    function addDateRange() {
+      const start = document.getElementById("rangeStartDate").value;
+      const end = document.getElementById("rangeEndDate").value;
+      const weekdays = Array.from(document.querySelectorAll("#weekdayPicker input:checked")).map(input => Number(input.value));
+      if (!start || !end || !weekdays.length) {
+        showPlannerMessage("請選擇批次起訖日期與至少一個星期。", "warn");
+        return;
+      }
+      const startDate = new Date(`${start}T00:00:00`);
+      const endDate = new Date(`${end}T00:00:00`);
+      if (startDate > endDate) {
+        showPlannerMessage("批次起始日期不可晚於結束日期。", "warn");
+        return;
+      }
+      const dates = [];
+      for (const date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        if (weekdays.includes(date.getDay())) dates.push(formatDate(date));
+      }
+      addDates(dates);
+      showPlannerMessage(`已批次加入 ${dates.length} 個符合星期的日期，可在清單中人工刪除不需要的日期。`, "ok");
+    }
+
+    function addDates(dates) {
+      dates.forEach(date => {
+        if (!state.planner.dates.includes(date)) state.planner.dates.push(date);
+      });
+      state.planner.dates.sort();
+      renderDates();
+      syncDateSelects();
+    }
+
+    function removeSelectedDates() {
+      const select = document.getElementById("selectedDates");
+      const selected = Array.from(select.selectedOptions).map(option => option.value);
+      state.planner.dates = state.planner.dates.filter(date => !selected.includes(date));
+      selected.forEach(date => delete state.planner.exceptions[date]);
+      renderDates();
+      syncDateSelects();
+      renderExceptions();
+    }
+
+    function renderDates() {
+      const select = document.getElementById("selectedDates");
+      select.innerHTML = state.planner.dates.map(date => `<option value="${date}">${date}</option>`).join("");
+      syncDateSelects();
+    }
+
+    function addException() {
+      const date = document.getElementById("matchDateInput").value || state.planner.dates[0];
+      if (!date) {
+        showPlannerMessage("請先新增至少一個比賽日期。", "warn");
+        return;
+      }
+      state.planner.exceptions[date] = state.planner.exceptions[date] || state.planner.matchesPerDay;
+      renderExceptions();
+    }
+
+    function renderExceptions() {
+      const box = document.getElementById("exceptionsList");
+      const entries = Object.entries(state.planner.exceptions);
+      if (!entries.length) {
+        box.innerHTML = "";
+        return;
+      }
+      box.innerHTML = entries.map(([date, count]) => `
+        <div class="row">
+          <span class="row-index">例</span>
+          <label>${date}
+            <input type="number" min="1" value="${count}" data-exception-date="${date}">
+          </label>
+          <button class="icon danger" title="移除" data-remove-exception="${date}">×</button>
+        </div>
+      `).join("");
+      box.querySelectorAll("[data-exception-date]").forEach(input => {
+        input.addEventListener("input", () => state.planner.exceptions[input.dataset.exceptionDate] = Math.max(1, Number(input.value) || 1));
+      });
+      box.querySelectorAll("[data-remove-exception]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          delete state.planner.exceptions[btn.dataset.removeException];
+          renderExceptions();
+        });
+      });
+    }
+
+    function generateSchedule() {
+      syncFormToPlanner();
+      const validation = validatePlanner();
+      if (validation) {
+        showPlannerMessage(validation, "danger");
+        return;
+      }
+      const groups = buildGroups();
+      const games = buildGames(groups);
+      const slots = buildSlots();
+      if (games.length > slots.length) {
+        showPlannerMessage(`場次不足：需要 ${games.length} 場，但目前日期與 Match 只有 ${slots.length} 格。`, "danger");
+        return;
+      }
+      const result = placeGames(games, slots);
+      if (result.error) {
+        showPlannerMessage(result.error, "danger");
+        return;
+      }
+      const scheduled = result.scheduled;
+      state.planner.schedule = scheduled.map((game, index) => ({ ...game, order: index + 1, note: game.note || "" }));
+      state.planner.status = "draft";
+      state.planner.updatedAt = todayStamp();
+      renderSchedule();
+      renderStats();
+      setSheetOutput();
+      showPlannerMessage(`已產生 ${state.planner.schedule.length} 場賽程，可手動調整後儲存或送出。`, "ok");
+    }
+
+    function syncFormToPlanner() {
+      const p = state.planner;
+      p.seasonName = document.getElementById("seasonName").value.trim();
+      p.format = document.getElementById("formatSelect").value;
+      p.groupMode = document.getElementById("groupMode").value;
+      p.groupSize = Math.max(2, Number(document.getElementById("groupSize").value) || 2);
+      p.manualGroups = document.getElementById("manualGroups").value;
+      p.matchesPerDay = Math.max(1, Number(document.getElementById("matchesPerDay").value) || 1);
+      Object.keys(p.conditions).forEach(key => {
+        const el = document.getElementById(key);
+        if (!el) return;
+        p.conditions[key] = el.multiple ? getSelectedValues(el) : el.type === "checkbox" ? el.checked : coerceConditionValue(key, el.value);
+      });
+    }
+
+    function addPriorityRule() {
+      syncFormToPlanner();
+      const teams = getSelectedValues(document.getElementById("priorityTeams"));
+      const dates = getSelectedValues(document.getElementById("priorityDates"));
+      const match = Number(document.getElementById("priorityMatch").value) || 1;
+      const level = document.getElementById("priorityLevel").value;
+      if (!teams.length || !dates.length) {
+        showPlannerMessage("優先安排條件需至少選擇一支隊伍與一個日期。", "warn");
+        return;
+      }
+      state.planner.conditions.priorityRules.push({ id: uid(), teams, dates, match, level });
+      renderPriorityRules();
+    }
+
+    function renderPriorityRules() {
+      const box = document.getElementById("priorityRulesList");
+      if (!box) return;
+      const rules = state.planner.conditions.priorityRules || [];
+      box.innerHTML = rules.length ? rules.map(rule => `
+        <div class="status">
+          ${escapeHtml(rule.teams.join("、"))} / ${escapeHtml(rule.dates.join("、"))} / Match${rule.match} / ${rule.level === "required" ? "必要" : "盡量達成"}
+          <button class="icon danger" title="移除" data-remove-priority="${rule.id}">×</button>
+        </div>
+      `).join("") : `<div class="meta">尚未新增排列組合。</div>`;
+      box.querySelectorAll("[data-remove-priority]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.planner.conditions.priorityRules = rules.filter(rule => rule.id !== btn.dataset.removePriority);
+          renderPriorityRules();
+        });
+      });
+    }
+
+    function addCustomRule() {
+      syncFormToPlanner();
+      const teams = getSelectedValues(document.getElementById("customTeams"));
+      const dates = getSelectedValues(document.getElementById("customDates"));
+      const matchValue = document.getElementById("customMatch").value;
+      const text = document.getElementById("customText").value.trim();
+      const level = document.getElementById("customLevel").value;
+      if (!teams.length && !dates.length && !matchValue && !text) {
+        showPlannerMessage("請至少填寫一項自訂需求內容。", "warn");
+        return;
+      }
+      state.planner.conditions.customRules.push({
+        id: uid(),
+        teams,
+        dates,
+        match: matchValue ? Number(matchValue) : "",
+        text,
+        level
+      });
+      document.getElementById("customText").value = "";
+      document.getElementById("customMatch").value = "";
+      renderCustomRules();
+    }
+
+    function renderCustomRules() {
+      const box = document.getElementById("customRulesList");
+      if (!box) return;
+      const rules = state.planner.conditions.customRules || [];
+      box.innerHTML = rules.length ? rules.map(rule => `
+        <div class="status">
+          ${escapeHtml([
+            rule.teams.length ? `隊伍:${rule.teams.join("、")}` : "",
+            rule.dates.length ? `日期:${rule.dates.join("、")}` : "",
+            rule.match ? `Match${rule.match}` : "",
+            rule.text,
+            rule.level === "required" ? "必要" : "盡量達成"
+          ].filter(Boolean).join(" / "))}
+          <button class="icon danger" title="移除" data-remove-custom="${rule.id}">×</button>
+        </div>
+      `).join("") : `<div class="meta">尚未新增自訂需求。</div>`;
+      box.querySelectorAll("[data-remove-custom]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.planner.conditions.customRules = rules.filter(rule => rule.id !== btn.dataset.removeCustom);
+          renderCustomRules();
+        });
+      });
+    }
+
+    function validatePlanner() {
+      const teams = cleanTeams();
+      if (!state.planner.seasonName) return "請填寫賽程標題 / 賽季名稱。";
+      if (teams.length < 2) return "至少需要 2 支隊伍。";
+      if (new Set(teams).size !== teams.length) return "隊伍名稱不可重複。";
+      if (!state.planner.dates.length) return "請新增比賽日期。";
+      return "";
+    }
+
+    function cleanTeams() {
+      return state.planner.teams.map(team => team.trim()).filter(Boolean);
+    }
+
+    function buildGroups() {
+      const teams = cleanTeams();
+      if (state.planner.format !== "group-single") return [{ name: "", teams }];
+      if (state.planner.groupMode === "manual") {
+        const groups = state.planner.manualGroups.split(/\r?\n/).map((line, index) => {
+          const [rawName, rawTeams] = line.includes(":") ? line.split(":") : [`第${index + 1}組`, line];
+          return {
+            name: rawName.trim() || `第${index + 1}組`,
+            teams: rawTeams.split(/[,\u3001]/).map(team => team.trim()).filter(Boolean)
+          };
+        }).filter(group => group.teams.length > 1);
+        return groups.length ? groups : [{ name: "A", teams }];
+      }
+      const size = Math.max(2, state.planner.groupSize);
+      const groups = [];
+      for (let index = 0; index < teams.length; index += size) {
+        groups.push({ name: String.fromCharCode(65 + groups.length), teams: teams.slice(index, index + size) });
+      }
+      return groups.filter(group => group.teams.length > 1);
+    }
+
+    function buildGames(groups) {
+      const order = new Map(cleanTeams().map((team, index) => [team, index]));
+      const rounds = state.planner.format === "double" ? [1, 2] : [1];
+      const games = [];
+      groups.forEach(group => {
+        const pairings = roundRobin(group.teams);
+        rounds.forEach(round => {
+          pairings.forEach(pair => {
+            const [a, b] = pair;
+            const first = order.get(a) <= order.get(b) ? a : b;
+            const second = first === a ? b : a;
+            games.push({
+              left: round === 2 ? second : first,
+              right: round === 2 ? first : second,
+              round,
+              group: group.name,
+              pairKey: [a, b].sort().join("__")
+            });
+          });
+        });
+      });
+      return games;
+    }
+
+    function roundRobin(teams) {
+      const list = [...teams];
+      if (list.length % 2 === 1) list.push("__BYE__");
+      const rounds = [];
+      const n = list.length;
+      const working = [...list];
+      for (let round = 0; round < n - 1; round++) {
+        for (let index = 0; index < n / 2; index++) {
+          const a = working[index];
+          const b = working[n - 1 - index];
+          if (a !== "__BYE__" && b !== "__BYE__") rounds.push([a, b]);
+        }
+        working.splice(1, 0, working.pop());
+      }
+      return rounds;
+    }
+
+    function buildSlots() {
+      return state.planner.dates.flatMap(date => {
+        const count = state.planner.exceptions[date] || state.planner.matchesPerDay;
+        return Array.from({ length: count }, (_, index) => ({ date, match: index + 1 }));
+      });
+    }
+
+    function placeGames(games, slots) {
+      const placed = [];
+      let slotIndex = 0;
+      const phases = state.planner.format === "double"
+        ? [games.filter(game => game.round === 1), games.filter(game => game.round === 2)]
+        : [games];
+
+      for (const phaseGames of phases) {
+        const remaining = [...phaseGames];
+        while (remaining.length && slotIndex < slots.length) {
+          const slot = slots[slotIndex];
+          const ranked = remaining
+            .map((game, index) => ({ game, index, score: canPlaceGame(game, slot, placed).ok ? scoreGame(game, slot, placed) : Infinity }))
+            .filter(item => Number.isFinite(item.score))
+            .sort((a, b) => a.score - b.score);
+          if (ranked.length) {
+            const chosen = ranked[0];
+            remaining.splice(chosen.index, 1);
+            placed.push({ ...chosen.game, date: slot.date, match: slot.match });
+          }
+          slotIndex++;
+        }
+        if (remaining.length) {
+          return {
+            scheduled: placed,
+            error: `必要條件與可用日期/場次衝突，${state.planner.format === "double" ? `第 ${phaseGames[0]?.round || ""} 輪` : ""} 尚有 ${remaining.length} 場排不進去。請增加比賽日、調整每日場次或放寬必要條件。`
+          };
+        }
+      }
+      return { scheduled: placed, error: "" };
+    }
+
+    function canPlaceGame(game, slot, placed) {
+      const c = state.planner.conditions;
+      const sameDayTeams = new Set(placed.filter(item => item.date === slot.date).flatMap(item => [item.left, item.right]));
+      if (sameDayTeams.has(game.left) || sameDayTeams.has(game.right)) return { ok: false, reason: "同日重複出賽" };
+      const requiredPriorityRules = c.limitPriority ? (c.priorityRules || []).filter(rule => rule.level === "required") : [];
+      const targetRules = requiredPriorityRules.filter(rule => rule.dates.includes(slot.date) && Number(rule.match) === Number(slot.match));
+      if (targetRules.length && !targetRules.some(rule => teamsOverlap([game.left, game.right], rule.teams))) {
+        return { ok: false, reason: "必要優先安排指定 slot" };
+      }
+      if (state.planner.format === "double" && c.limitDoubleGap) {
+        const prior = placed.find(item => item.pairKey === game.pairKey);
+        if (prior) {
+          const days = matchDayGap(prior.date, slot.date);
+          if (days < Number(c.doubleGapDays) && c.doubleGapLevel === "required") return { ok: false, reason: "雙循環間隔不足" };
+        }
+      }
+      if (c.limitWeekly && c.limitWeeklyLevel === "required") {
+        const nextPlaced = [...placed, { ...game, date: slot.date, match: slot.match }];
+        const max = maxWeeklyStreakForTeams(nextPlaced, [game.left, game.right]);
+        if (max >= Number(c.limitWeeklyDays)) return { ok: false, reason: "同週連續出賽達含門檻" };
+      }
+      const nextDayTeams = c.nextDayTeams || [];
+      const involvedNextDayTeam = nextDayTeams.find(team => [game.left, game.right].includes(team));
+      if (c.limitNextDayMatch1 && involvedNextDayTeam && c.nextDayLevel === "required") {
+        const yesterday = addDays(slot.date, -1);
+        const playedYesterday = placed.some(item => item.date === yesterday && [item.left, item.right].includes(involvedNextDayTeam));
+        if (playedYesterday && slot.match !== 1) return { ok: false, reason: "連兩天第二天須 Match1" };
+      }
+      if (c.limitMatchBalance && c.matchBalanceLevel === "required") {
+        const maxDiff = projectedMatchBalanceDiff([...placed, { ...game, date: slot.date, match: slot.match }]);
+        if (maxDiff > Number(c.matchBalanceTolerance || 2)) return { ok: false, reason: "Match 平均差距超過容許值" };
+      }
+      return { ok: true, reason: "" };
+    }
+
+    function scoreGame(game, slot, placed) {
+      const c = state.planner.conditions;
+      let score = 0;
+      const projected = [...placed, { ...game, date: slot.date, match: slot.match }];
+      if (c.limitPriority) {
+        (c.priorityRules || []).forEach(rule => {
+          const targetSlot = rule.dates.includes(slot.date) && Number(rule.match) === Number(slot.match);
+          const involves = teamsOverlap([game.left, game.right], rule.teams);
+          if (targetSlot && involves) score -= rule.level === "required" ? 1000 : 700;
+          if (targetSlot && !involves && rule.level === "best") score += 350;
+          if (!targetSlot && involves) score += rule.level === "required" ? 30 : 80;
+        });
+      }
+      if (c.limitNextDayMatch1 && c.nextDayLevel === "best") {
+        (c.nextDayTeams || []).forEach(team => {
+          if (![game.left, game.right].includes(team)) return;
+          const yesterday = addDays(slot.date, -1);
+          const playedYesterday = placed.some(item => item.date === yesterday && [item.left, item.right].includes(team));
+          if (playedYesterday) score += Number(slot.match) === 1 ? -900 : 900 + (Number(slot.match) * 40);
+        });
+      }
+      if (c.limitWeekly && c.limitWeeklyLevel === "best") {
+        const max = maxWeeklyStreakForTeams(projected, [game.left, game.right]);
+        const threshold = Number(c.limitWeeklyDays || 3);
+        if (max >= threshold) score += 650 + ((max - threshold) * 250);
+        else if (max === threshold - 1) score += 100;
+      }
+      if (state.planner.format === "double" && c.limitDoubleGap && c.doubleGapLevel === "best") {
+        const prior = placed.find(item => item.pairKey === game.pairKey);
+        if (prior) {
+          const gap = matchDayGap(prior.date, slot.date);
+          const target = Number(c.doubleGapDays || 1);
+          if (gap < target) score += 600 + ((target - gap) * 180);
+          else score -= Math.min(gap, target + 3) * 20;
+        }
+      }
+      if (c.limitMatchBalance) {
+        const diff = projectedMatchBalanceDiff(projected);
+        const tolerance = Number(c.matchBalanceTolerance || 2);
+        score += diff * (c.matchBalanceLevel === "required" ? 50 : 35);
+        if (c.matchBalanceLevel === "best" && diff > tolerance) score += (diff - tolerance) * 350;
+      }
+      const teamCounts = countTeamGames(placed);
+      score += (teamCounts[game.left] || 0) + (teamCounts[game.right] || 0);
+      return score;
+    }
+
+    function teamsOverlap(a, b) {
+      const wanted = new Set(b || []);
+      return a.some(team => wanted.has(team));
+    }
+
+    function countTeamGames(schedule) {
+      return schedule.reduce((acc, row) => {
+        acc[row.left] = (acc[row.left] || 0) + 1;
+        acc[row.right] = (acc[row.right] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function renderSchedule() {
+      const body = document.getElementById("scheduleBody");
+      if (!body) return;
+      if (!state.planner.schedule.length) {
+        body.innerHTML = `<tr><td colspan="9">尚未產生賽程。</td></tr>`;
+        setSheetOutput();
+        return;
+      }
+      body.innerHTML = state.planner.schedule.map((row, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td><input type="date" value="${row.date}" data-field="date" data-index="${index}"></td>
+          <td><input type="number" min="1" value="${row.match}" data-field="match" data-index="${index}"></td>
+          <td><input value="${escapeAttr(row.left)}" data-field="left" data-index="${index}"></td>
+          <td><input value="${escapeAttr(row.right)}" data-field="right" data-index="${index}"></td>
+          <td><input type="number" min="1" value="${row.round}" data-field="round" data-index="${index}"></td>
+          <td><input value="${escapeAttr(row.group || "")}" data-field="group" data-index="${index}"></td>
+          <td><input value="${escapeAttr(row.note || "")}" data-field="note" data-index="${index}"></td>
+          <td>
+            <button class="icon" title="上移" data-move-up="${index}">↑</button>
+            <button class="icon" title="下移" data-move-down="${index}">↓</button>
+          </td>
+        </tr>
+      `).join("");
+      body.querySelectorAll("[data-field]").forEach(input => {
+        input.addEventListener("input", () => {
+          const row = state.planner.schedule[Number(input.dataset.index)];
+          const field = input.dataset.field;
+          row[field] = ["match", "round"].includes(field) ? Number(input.value) || 1 : input.value;
+          row.pairKey = [row.left, row.right].sort().join("__");
+          setSheetOutput();
+        });
+      });
+      body.querySelectorAll("[data-move-up]").forEach(btn => {
+        btn.addEventListener("click", () => moveSchedule(Number(btn.dataset.moveUp), -1));
+      });
+      body.querySelectorAll("[data-move-down]").forEach(btn => {
+        btn.addEventListener("click", () => moveSchedule(Number(btn.dataset.moveDown), 1));
+      });
+      setSheetOutput();
+    }
+
+    function moveSchedule(index, delta) {
+      const next = index + delta;
+      if (next < 0 || next >= state.planner.schedule.length) return;
+      const list = state.planner.schedule;
+      [list[index], list[next]] = [list[next], list[index]];
+      renderSchedule();
+      renderStats();
+    }
+
+    function saveDraft() {
+      syncFormToPlanner();
+      if (!state.planner.seasonName) {
+        showPlannerMessage("請先填寫賽季名稱。", "danger");
+        return;
+      }
+      const item = snapshotPlanner("draft");
+      upsertSchedule(item);
+      showPlannerMessage("已儲存為未確認版本。", "ok");
+    }
+
+    function submitSchedule() {
+      syncFormToPlanner();
+      if (!state.planner.schedule.length) {
+        showPlannerMessage("請先產生或編輯賽程後再送出。", "danger");
+        return;
+      }
+      const item = snapshotPlanner("final");
+      upsertSchedule(item);
+      showPlannerMessage("已送出為最終版本，並加入賽程搜索。", "ok");
+      renderSearchResults();
+    }
+
+    function snapshotPlanner(status) {
+      const id = state.planner.id || uid();
+      state.planner.id = id;
+      state.planner.status = status;
+      state.planner.updatedAt = todayStamp();
+      return JSON.parse(JSON.stringify({ ...state.planner, id, status, updatedAt: state.planner.updatedAt }));
+    }
+
+    function upsertSchedule(item) {
+      const index = state.data.schedules.findIndex(schedule => schedule.id === item.id);
+      if (index >= 0) state.data.schedules[index] = item;
+      else state.data.schedules.unshift(item);
+      saveStore();
+    }
+
+    function renderStats() {
+      const box = document.getElementById("stats");
+      if (!box) return;
+      const schedule = state.planner.schedule;
+      if (!schedule.length) {
+        box.innerHTML = `<div class="status">尚未有賽程可統計。</div>`;
+        return;
+      }
+      const stats = calculateStats(schedule);
+      box.innerHTML = [
+        statTable("左右方與總場次", ["隊伍", "左方", "右方", "總場次"], stats.sideRows),
+        state.planner.format === "double" ? statTable("雙循環分輪總場次", ["隊伍", "第一輪", "第二輪"], stats.roundRows) : "",
+        statTable("各 Match 出賽次數", ["隊伍", ...stats.matchHeaders], stats.matchRows),
+        state.planner.format === "double" ? statTable("分輪 Match 出賽次數", ["隊伍", ...stats.roundMatchHeaders], stats.roundMatchRows) : "",
+        statTable("同一週連續出賽", ["隊伍", "最大連續天數", "週次"], stats.streakRows),
+        warningsBlock(stats.warnings)
+      ].filter(Boolean).join("");
+    }
+
+    function calculateStats(schedule) {
+      const teams = cleanTeams();
+      const maxMatch = Math.max(...schedule.map(row => Number(row.match) || 1));
+      const byTeam = Object.fromEntries(teams.map(team => [team, {
+        left: 0, right: 0, total: 0, rounds: { 1: 0, 2: 0 }, matches: {}, roundMatches: {}, dates: []
+      }]));
+      schedule.forEach(row => {
+        [row.left, row.right].forEach(sideTeam => {
+          if (!byTeam[sideTeam]) byTeam[sideTeam] = { left: 0, right: 0, total: 0, rounds: { 1: 0, 2: 0 }, matches: {}, roundMatches: {}, dates: [] };
+          byTeam[sideTeam].total++;
+          byTeam[sideTeam].rounds[row.round] = (byTeam[sideTeam].rounds[row.round] || 0) + 1;
+          byTeam[sideTeam].matches[row.match] = (byTeam[sideTeam].matches[row.match] || 0) + 1;
+          const rmKey = `R${row.round}-M${row.match}`;
+          byTeam[sideTeam].roundMatches[rmKey] = (byTeam[sideTeam].roundMatches[rmKey] || 0) + 1;
+          byTeam[sideTeam].dates.push(row.date);
+        });
+        byTeam[row.left].left++;
+        byTeam[row.right].right++;
+      });
+      const allTeams = Object.keys(byTeam).sort((a, b) => (teams.indexOf(a) === -1 ? 999 : teams.indexOf(a)) - (teams.indexOf(b) === -1 ? 999 : teams.indexOf(b)));
+      const matchHeaders = Array.from({ length: maxMatch }, (_, i) => `Match${i + 1}`);
+      const roundMatchHeaders = [1, 2].flatMap(round => matchHeaders.map(match => `R${round}-${match}`));
+      const sideRows = allTeams.map(team => [team, byTeam[team].left, byTeam[team].right, byTeam[team].total]);
+      const roundRows = allTeams.map(team => [team, byTeam[team].rounds[1] || 0, byTeam[team].rounds[2] || 0]);
+      const matchRows = allTeams.map(team => [team, ...matchHeaders.map((_, i) => byTeam[team].matches[i + 1] || 0)]);
+      const roundMatchRows = allTeams.map(team => [team, ...roundMatchHeaders.map(header => byTeam[team].roundMatches[header.replace("Match", "M")] || 0)]);
+      const streakRows = allTeams.map(team => {
+        const result = weeklyStreak(byTeam[team].dates);
+        return [team, result.max >= 2 ? result.max : 0, result.week || "-"];
+      });
+      return { sideRows, roundRows, matchHeaders, matchRows, roundMatchHeaders, roundMatchRows, streakRows, warnings: checkWarnings(schedule) };
+    }
+
+    function statTable(title, headers, rows) {
+      return `
+        <div class="card">
+          <h3>${title}</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>${headers.map(header => `<th>${header}</th>`).join("")}</tr></thead>
+              <tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(String(cell))}</td>`).join("")}</tr>`).join("")}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function warningsBlock(warnings) {
+      const type = warnings.length ? "warn" : "ok";
+      const content = warnings.length ? warnings.map(item => `<div>${escapeHtml(item)}</div>`).join("") : "目前未偵測到明顯衝突。";
+      return `<div class="card"><h3>限制檢查</h3><div class="status ${type}">${content}</div></div>`;
+    }
+
+    function checkWarnings(schedule) {
+      const warnings = [];
+      const c = state.planner.conditions;
+      const dayMap = new Map();
+      schedule.forEach(row => {
+        const key = row.date;
+        dayMap.set(key, dayMap.get(key) || []);
+        dayMap.get(key).push(row);
+      });
+      dayMap.forEach((rows, date) => {
+        const seen = new Set();
+        rows.forEach(row => {
+          [row.left, row.right].forEach(team => {
+            if (seen.has(team)) warnings.push(`${date} ${team} 同一天重複出賽`);
+            seen.add(team);
+          });
+        });
+      });
+      if (c.limitWeekly) {
+        const dateMap = {};
+        schedule.forEach(row => {
+          [row.left, row.right].forEach(team => {
+            dateMap[team] = dateMap[team] || [];
+            dateMap[team].push(row.date);
+          });
+        });
+        Object.entries(dateMap).forEach(([team, dates]) => {
+          const result = weeklyStreak(dates);
+          if (Number(result.max) >= Number(c.limitWeeklyDays)) warnings.push(`${team} 同一週連續出賽 ${result.max} 天，達到限制門檻`);
+        });
+      }
+      if (state.planner.format === "double" && c.limitDoubleGap) {
+        const pairDates = {};
+        schedule.forEach(row => {
+          pairDates[row.pairKey] = pairDates[row.pairKey] || [];
+          pairDates[row.pairKey].push(row.date);
+        });
+        Object.values(pairDates).forEach(dates => {
+          if (dates.length > 1 && matchDayGap(dates[0], dates[1]) < Number(c.doubleGapDays)) {
+            warnings.push(`雙循環相同對戰間隔小於 ${c.doubleGapDays} 個中間比賽日`);
+          }
+        });
+      }
+      if (state.planner.format === "double") {
+        const firstRoundLastIndex = Math.max(...schedule.map((row, index) => Number(row.round) === 1 ? index : -1));
+        const secondRoundFirstIndex = schedule.findIndex(row => Number(row.round) === 2);
+        if (secondRoundFirstIndex !== -1 && firstRoundLastIndex > secondRoundFirstIndex) {
+          warnings.push("雙循環賽程中第二輪出現在第一輪全部完成之前");
+        }
+      }
+      if (c.limitNextDayMatch1 && (c.nextDayTeams || []).length) {
+        schedule.forEach(row => {
+          (c.nextDayTeams || []).forEach(team => {
+            if (![row.left, row.right].includes(team)) return;
+            const yesterday = addDays(row.date, -1);
+            const playedYesterday = schedule.some(item => item.date === yesterday && [item.left, item.right].includes(team));
+            if (playedYesterday && Number(row.match) !== 1) warnings.push(`${team} 連續出賽第二天未安排在 Match1`);
+          });
+        });
+      }
+      if (c.limitMatchBalance) {
+        const diff = projectedMatchBalanceDiff(schedule);
+        if (diff > Number(c.matchBalanceTolerance || 2)) warnings.push(`各 Match 出賽次數最大差距為 ${diff}，超過容許 +- ${c.matchBalanceTolerance || 2}`);
+      }
+      (c.customRules || []).forEach(rule => {
+        warnings.push(`自訂需求${rule.level === "required" ? "（必要）" : "（盡量達成）"}：${[
+          rule.teams?.length ? `隊伍 ${rule.teams.join("、")}` : "",
+          rule.dates?.length ? `日期 ${rule.dates.join("、")}` : "",
+          rule.match ? `Match${rule.match}` : "",
+          rule.text || ""
+        ].filter(Boolean).join(" / ")}`);
+      });
+      return [...new Set(warnings)];
+    }
+
+    function maxWeeklyStreakForTeams(schedule, teams) {
+      return Math.max(...teams.map(team => weeklyStreak(schedule.filter(row => [row.left, row.right].includes(team)).map(row => row.date)).max), 0);
+    }
+
+    function weeklyStreak(dates) {
+      const unique = [...new Set(dates)].sort();
+      const weeks = new Map();
+      unique.forEach(date => {
+        const key = weekKey(date);
+        weeks.set(key, weeks.get(key) || []);
+        weeks.get(key).push(date);
+      });
+      let max = 0;
+      let week = "";
+      weeks.forEach((weekDates, key) => {
+        let current = 1;
+        for (let index = 1; index < weekDates.length; index++) {
+          current = daysBetween(weekDates[index - 1], weekDates[index]) === 1 ? current + 1 : 1;
+          if (current > max) {
+            max = current;
+            week = key;
+          }
+        }
+      });
+      return { max, week };
+    }
+
+    function weekKey(dateString) {
+      const date = new Date(`${dateString}T00:00:00`);
+      const start = new Date(date);
+      const day = start.getDay() || 7;
+      start.setDate(start.getDate() - day + 1);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      return `${formatDate(start)} ~ ${formatDate(end)}`;
+    }
+
+    function formatDate(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function daysBetween(a, b) {
+      return Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
+    }
+
+    function matchDayGap(a, b) {
+      const dates = state.planner.dates.slice().sort();
+      const [start, end] = [dates.indexOf(a), dates.indexOf(b)].sort((x, y) => x - y);
+      if (start === -1 || end === -1) return Math.abs(daysBetween(a, b));
+      return Math.max(0, end - start - 1);
+    }
+
+    function projectedMatchBalanceDiff(schedule) {
+      const teams = cleanTeams();
+      const maxMatch = Math.max(Number(state.planner.matchesPerDay) || 1, ...schedule.map(row => Number(row.match) || 1));
+      let maxDiff = 0;
+      for (let match = 1; match <= maxMatch; match++) {
+        const counts = Object.fromEntries(teams.map(team => [team, 0]));
+        schedule.forEach(row => {
+          if (Number(row.match) !== match) return;
+          counts[row.left] = (counts[row.left] || 0) + 1;
+          counts[row.right] = (counts[row.right] || 0) + 1;
+        });
+        const values = Object.values(counts);
+        maxDiff = Math.max(maxDiff, Math.max(...values) - Math.min(...values));
+      }
+      return maxDiff;
+    }
+
+    function addDays(dateString, delta) {
+      const date = new Date(`${dateString}T00:00:00`);
+      date.setDate(date.getDate() + delta);
+      return formatDate(date);
+    }
+
+    function bindSearch() {
+      const input = document.getElementById("searchInput");
+      input.addEventListener("input", renderSearchResults);
+    }
+
+    function renderSearchResults() {
+      const box = document.getElementById("searchResults");
+      if (!box) return;
+      const query = (document.getElementById("searchInput")?.value || "").trim().toLowerCase();
+      const results = state.data.schedules
+        .filter(item => item.status === "final")
+        .filter(item => !query || item.seasonName.toLowerCase().includes(query));
+      box.innerHTML = results.length ? results.map(item => `
+        <article class="card">
+          <h3>${escapeHtml(item.seasonName)}</h3>
+          <div class="meta">
+            狀態：最終版本<br>
+            賽制：${formatLabel(item.format)}<br>
+            場次：${item.schedule.length}<br>
+            更新：${escapeHtml(item.updatedAt || "")}
+          </div>
+          <div class="toolbar">
+            <button data-view-schedule="${item.id}">查看</button>
+            ${canEdit() ? `<button class="primary" data-edit-schedule="${item.id}">編輯</button>` : ""}
+          </div>
+        </article>
+      `).join("") : `<div class="status">沒有符合的最終賽程。</div>`;
+      box.querySelectorAll("[data-view-schedule]").forEach(btn => btn.addEventListener("click", () => showScheduleDetail(btn.dataset.viewSchedule)));
+      box.querySelectorAll("[data-edit-schedule]").forEach(btn => btn.addEventListener("click", () => editSchedule(btn.dataset.editSchedule)));
+    }
+
+    function showScheduleDetail(id) {
+      const item = state.data.schedules.find(schedule => schedule.id === id);
+      const panel = document.getElementById("searchDetail");
+      if (!item) return;
+      panel.classList.remove("hidden");
+      panel.innerHTML = `
+        <div class="panel-head">
+          <h2>${escapeHtml(item.seasonName)}</h2>
+          <button id="closeDetailBtn">關閉</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>日期</th><th>Match</th><th>左方隊伍</th><th>右方隊伍</th><th>輪次</th><th>組別</th><th>備註</th></tr></thead>
+            <tbody>${item.schedule.map((row, index) => `
+              <tr><td>${index + 1}</td><td>${row.date}</td><td>Match${row.match}</td><td>${escapeHtml(row.left)}</td><td>${escapeHtml(row.right)}</td><td>${row.round}</td><td>${escapeHtml(row.group || "")}</td><td>${escapeHtml(row.note || "")}</td></tr>
+            `).join("")}</tbody>
+          </table>
+        </div>
+      `;
+      document.getElementById("closeDetailBtn").addEventListener("click", () => panel.classList.add("hidden"));
+    }
+
+    function editSchedule(id) {
+      const item = state.data.schedules.find(schedule => schedule.id === id);
+      if (!item || !canEdit()) return;
+      state.planner = JSON.parse(JSON.stringify(item));
+      state.planner.status = "draft";
+      state.currentView = "planner";
+      render();
+      showPlannerMessage("已載入最終版本，可編輯後再次送出更新。", "warn");
+    }
+
+    function bindAdmin() {
+      if (!document.getElementById("view-admin")) return;
+      document.getElementById("currentRoleNote").value = `${state.currentEmail} / ${roleLabel(roleOf(state.currentEmail))}`;
+      document.getElementById("addRoleBtn").addEventListener("click", () => {
+        const email = document.getElementById("roleEmail").value.trim().toLowerCase();
+        const role = document.getElementById("roleSelect").value;
+        if (!email || email === OWNER_EMAIL) return;
+        state.data.roles[email] = role;
+        saveStore();
+        renderRoles();
+      });
+      renderRoles();
+    }
+
+    function renderRoles() {
+      const body = document.getElementById("rolesBody");
+      if (!body) return;
+      const rows = [[OWNER_EMAIL, "owner"], ...Object.entries(state.data.roles)];
+      body.innerHTML = rows.map(([email, role]) => `
+        <tr>
+          <td>${escapeHtml(email)}</td>
+          <td>${roleLabel(role)}</td>
+          <td>${role === "owner" ? "-" : `<button class="danger" data-remove-role="${escapeAttr(email)}">移除</button>`}</td>
+        </tr>
+      `).join("");
+      body.querySelectorAll("[data-remove-role]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          delete state.data.roles[btn.dataset.removeRole];
+          saveStore();
+          renderRoles();
+        });
+      });
+    }
+
+    function exportCsv() {
+      if (!state.planner.schedule.length) return;
+      const csv = toDelimited(",");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${state.planner.seasonName || "schedule"}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function copySheetData() {
+      const text = toDelimited("\t");
+      document.getElementById("sheetOutput").value = text;
+      navigator.clipboard?.writeText(text);
+      showPlannerMessage("已產生並嘗試複製 Google Sheet 貼上資料。", "ok");
+    }
+
+    function setSheetOutput() {
+      const output = document.getElementById("sheetOutput");
+      if (output) output.value = state.planner.schedule.length ? toDelimited("\t") : "";
+    }
+
+    function toDelimited(delimiter) {
+      const headers = ["日期", "Match", "左方隊伍", "右方隊伍", "輪次", "組別", "備註"];
+      const rows = state.planner.schedule.map(row => [row.date, `Match${row.match}`, row.left, row.right, row.round, row.group || "", row.note || ""]);
+      return [headers, ...rows].map(row => row.map(cell => quoteCell(cell, delimiter)).join(delimiter)).join("\n");
+    }
+
+    function quoteCell(cell, delimiter) {
+      const text = String(cell ?? "");
+      if (delimiter === "\t") return text.replace(/\t/g, " ").replace(/\r?\n/g, " ");
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+
+    function showPlannerMessage(message, type = "") {
+      const box = document.getElementById("plannerMessage");
+      if (!box) return;
+      box.innerHTML = `<div class="status ${type}">${escapeHtml(message)}</div>`;
+    }
+
+    function roleLabel(role) {
+      return { owner: "擁有者", admin: "管理員", user: "使用者" }[role] || "使用者";
+    }
+
+    function formatLabel(format) {
+      return { single: "單循環", double: "雙循環", "group-single": "分組競賽單循環" }[format] || format;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+
+    render();
+  </script>
+</body>
+</html>
