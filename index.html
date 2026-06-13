@@ -688,6 +688,23 @@
               </div>
               <div class="condition">
                 <div class="condition-line">
+                  <label class="checkline"><input id="limitConsecutiveBalance" type="checkbox"> 同一賽季連續 X 天出賽要平均</label>
+                  <label>連續天數 X
+                    <input id="consecutiveBalanceDays" type="number" min="2" value="2">
+                  </label>
+                  <label>容許差距
+                    <input id="consecutiveBalanceTolerance" type="number" min="0" placeholder="空白預設 1">
+                  </label>
+                  <label>條件強度
+                    <select id="consecutiveBalanceLevel">
+                      <option value="required">必要</option>
+                      <option value="best">盡量達成</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="condition">
+                <div class="condition-line">
                   <div>自訂需求</div>
                   <div class="grid three">
                     <label>X 隊伍
@@ -894,6 +911,10 @@
           limitMatchBalance: false,
           matchBalanceTolerance: 2,
           matchBalanceLevel: "best",
+          limitConsecutiveBalance: false,
+          consecutiveBalanceDays: 2,
+          consecutiveBalanceTolerance: "",
+          consecutiveBalanceLevel: "best",
           customRules: []
         },
         schedule: [],
@@ -1186,7 +1207,7 @@
     }
 
     function coerceConditionValue(key, value) {
-      if (["limitWeeklyDays", "doubleGapDays", "priorityMatch", "matchBalanceTolerance", "customMatch"].includes(key)) return value === "" ? "" : Number(value) || 1;
+      if (["limitWeeklyDays", "doubleGapDays", "priorityMatch", "matchBalanceTolerance", "customMatch", "consecutiveBalanceDays", "consecutiveBalanceTolerance"].includes(key)) return value === "" ? "" : Number(value) || 1;
       return value;
     }
 
@@ -1666,6 +1687,10 @@
         const maxDiff = projectedMatchBalanceDiff([...placed, { ...game, date: slot.date, match: slot.match }]);
         if (maxDiff > Number(c.matchBalanceTolerance || 2)) return { ok: false, reason: "Match 平均差距超過容許值" };
       }
+      if (c.limitConsecutiveBalance && c.consecutiveBalanceLevel === "required") {
+        const diff = consecutiveWindowBalance([...placed, { ...game, date: slot.date, match: slot.match }], Number(c.consecutiveBalanceDays || 2)).diff;
+        if (diff > consecutiveBalanceTolerance()) return { ok: false, reason: "連續出賽平均差距超過容許值" };
+      }
       return { ok: true, reason: "" };
     }
 
@@ -1717,6 +1742,12 @@
         const tolerance = Number(c.matchBalanceTolerance || 2);
         score += diff * (c.matchBalanceLevel === "required" ? 50 : 35);
         if (c.matchBalanceLevel === "best" && diff > tolerance) score += (diff - tolerance) * 350;
+      }
+      if (c.limitConsecutiveBalance) {
+        const result = consecutiveWindowBalance(projected, Number(c.consecutiveBalanceDays || 2));
+        const tolerance = consecutiveBalanceTolerance();
+        score += result.diff * (c.consecutiveBalanceLevel === "required" ? 70 : 45);
+        if (result.diff > tolerance) score += (result.diff - tolerance) * (c.consecutiveBalanceLevel === "required" ? 500 : 380);
       }
       const teamCounts = countTeamGames(placed);
       score += (teamCounts[game.left] || 0) + (teamCounts[game.right] || 0);
@@ -1980,6 +2011,14 @@
         const diff = projectedMatchBalanceDiff(schedule);
         if (diff > Number(c.matchBalanceTolerance || 2)) warnings.push(`各 Match 出賽次數最大差距為 ${diff}，超過容許 +- ${c.matchBalanceTolerance || 2}；請查看「各 Match 出賽次數」表格中差距最大的 Match 欄位`);
       }
+      if (c.limitConsecutiveBalance) {
+        const days = Number(c.consecutiveBalanceDays || 2);
+        const tolerance = consecutiveBalanceTolerance();
+        const result = consecutiveWindowBalance(schedule, days);
+        if (result.diff > tolerance) {
+          warnings.push(`同一賽季連續 ${days} 天出賽次數最大差距為 ${result.diff}，超過容許 ${tolerance}；最多：${result.maxTeams.join("、")}=${result.max} 次，最少：${result.minTeams.join("、")}=${result.min} 次`);
+        }
+      }
       (c.customRules || []).forEach(rule => {
         warnings.push(`自訂需求${rule.level === "required" ? "（必要）" : "（盡量達成）"}：${[
           rule.teams?.length ? `隊伍 ${rule.teams.join("、")}` : "",
@@ -2116,6 +2155,43 @@
         maxDiff = Math.max(maxDiff, Math.max(...values) - Math.min(...values));
       }
       return maxDiff;
+    }
+
+    function consecutiveBalanceTolerance() {
+      const value = state.planner.conditions.consecutiveBalanceTolerance;
+      return value === "" || value === null || value === undefined ? 1 : Number(value);
+    }
+
+    function consecutiveWindowBalance(schedule, days) {
+      const teams = cleanTeams();
+      const counts = Object.fromEntries(teams.map(team => [team, 0]));
+      teams.forEach(team => {
+        const dates = [...new Set(schedule
+          .filter(row => [row.left, row.right].includes(team))
+          .map(row => row.date))]
+          .sort();
+        for (let index = 0; index <= dates.length - days; index++) {
+          let consecutive = true;
+          for (let offset = 1; offset < days; offset++) {
+            if (daysBetween(dates[index + offset - 1], dates[index + offset]) !== 1) {
+              consecutive = false;
+              break;
+            }
+          }
+          if (consecutive) counts[team]++;
+        }
+      });
+      const values = Object.values(counts);
+      const max = values.length ? Math.max(...values) : 0;
+      const min = values.length ? Math.min(...values) : 0;
+      return {
+        counts,
+        diff: max - min,
+        max,
+        min,
+        maxTeams: teams.filter(team => counts[team] === max),
+        minTeams: teams.filter(team => counts[team] === min)
+      };
     }
 
     function addDays(dateString, delta) {
