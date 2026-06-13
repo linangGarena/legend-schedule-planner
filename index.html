@@ -1572,28 +1572,59 @@
         : [games];
 
       for (const phaseGames of phases) {
-        const remaining = [...phaseGames];
-        while (remaining.length && slotIndex < slots.length) {
-          const slot = slots[slotIndex];
-          const ranked = remaining
-            .map((game, index) => ({ game, index, score: canPlaceGame(game, slot, placed).ok ? scoreGame(game, slot, placed) : Infinity }))
-            .filter(item => Number.isFinite(item.score))
-            .sort((a, b) => a.score - b.score);
-          if (ranked.length) {
-            const chosen = ranked[0];
-            remaining.splice(chosen.index, 1);
-            placed.push({ ...chosen.game, date: slot.date, match: slot.match });
-          }
-          slotIndex++;
-        }
-        if (remaining.length) {
+        const result = placePhase(phaseGames, slots, slotIndex, placed);
+        if (result.error) {
           return {
             scheduled: placed,
-            error: `必要條件與可用日期/場次衝突，${state.planner.format === "double" ? `第 ${phaseGames[0]?.round || ""} 輪` : ""} 尚有 ${remaining.length} 場排不進去。請增加比賽日、調整每日場次或放寬必要條件。`
+            error: `必要條件與可用日期/場次衝突，${state.planner.format === "double" ? `第 ${phaseGames[0]?.round || ""} 輪` : ""} 尚有 ${phaseGames.length - result.scheduledCount} 場排不進去。請增加比賽日、調整每日場次或放寬必要條件。`
           };
         }
+        placed.splice(0, placed.length, ...result.placed);
+        slotIndex = result.nextSlotIndex;
       }
       return { scheduled: placed, error: "" };
+    }
+
+    function placePhase(phaseGames, slots, startSlotIndex, basePlaced) {
+      const startedAt = performance.now();
+      let explored = 0;
+      let best = { count: 0, placed: [...basePlaced] };
+      const maxBranches = 90000;
+      const maxMillis = 2500;
+
+      function search(slotIndex, remaining, placed) {
+        explored++;
+        if (placed.length - basePlaced.length > best.count) {
+          best = { count: placed.length - basePlaced.length, placed };
+        }
+        if (!remaining.length) return { ok: true, placed, nextSlotIndex: slotIndex };
+        if (slotIndex >= slots.length) return { ok: false };
+        if (slots.length - slotIndex < remaining.length) return { ok: false };
+        if (explored > maxBranches || performance.now() - startedAt > maxMillis) return { ok: false };
+
+        const slot = slots[slotIndex];
+        const ranked = remaining
+          .map((game, index) => ({ game, index, score: canPlaceGame(game, slot, placed).ok ? scoreGame(game, slot, placed) : Infinity }))
+          .filter(item => Number.isFinite(item.score))
+          .sort((a, b) => a.score - b.score);
+
+        for (const choice of ranked) {
+          const nextRemaining = remaining.filter((_, index) => index !== choice.index);
+          const nextPlaced = [...placed, { ...choice.game, date: slot.date, match: slot.match }];
+          const result = search(slotIndex + 1, nextRemaining, nextPlaced);
+          if (result.ok) return result;
+        }
+
+        if (slots.length - slotIndex - 1 >= remaining.length) {
+          const skipped = search(slotIndex + 1, remaining, placed);
+          if (skipped.ok) return skipped;
+        }
+        return { ok: false };
+      }
+
+      const result = search(startSlotIndex, [...phaseGames], [...basePlaced]);
+      if (result.ok) return { ...result, error: "", scheduledCount: phaseGames.length };
+      return { error: "排不進去", placed: best.placed, nextSlotIndex: startSlotIndex, scheduledCount: best.count };
     }
 
     function canPlaceGame(game, slot, placed) {
