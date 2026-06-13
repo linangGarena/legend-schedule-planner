@@ -1854,36 +1854,38 @@
         dayMap.get(key).push(row);
       });
       dayMap.forEach((rows, date) => {
-        const seen = new Set();
+        const seen = new Map();
         rows.forEach(row => {
           [row.left, row.right].forEach(team => {
-            if (seen.has(team)) warnings.push(`${date} ${team} 同一天重複出賽`);
-            seen.add(team);
+            if (seen.has(team)) warnings.push(`${slotLabel(row)}：${team} 同一天重複出賽，前一場為 ${slotLabel(seen.get(team))}`);
+            seen.set(team, row);
           });
         });
       });
       if (c.limitWeekly) {
-        const dateMap = {};
+        const rowMap = {};
         schedule.forEach(row => {
           [row.left, row.right].forEach(team => {
-            dateMap[team] = dateMap[team] || [];
-            dateMap[team].push(row.date);
+            rowMap[team] = rowMap[team] || [];
+            rowMap[team].push(row);
           });
         });
-        Object.entries(dateMap).forEach(([team, dates]) => {
-          const result = weeklyStreak(dates);
-          if (Number(result.max) >= Number(c.limitWeeklyDays)) warnings.push(`${team} 同一週連續出賽 ${result.max} 天，達到限制門檻`);
+        Object.entries(rowMap).forEach(([team, rows]) => {
+          const result = weeklyStreakRows(rows);
+          if (Number(result.max) >= Number(c.limitWeeklyDays)) {
+            warnings.push(`${team} 同一週連續出賽 ${result.max} 天，達到限制門檻：${result.rows.map(slotLabel).join("、")}`);
+          }
         });
       }
       if (state.planner.format === "double" && c.limitDoubleGap) {
-        const pairDates = {};
+        const pairRows = {};
         schedule.forEach(row => {
-          pairDates[row.pairKey] = pairDates[row.pairKey] || [];
-          pairDates[row.pairKey].push(row.date);
+          pairRows[row.pairKey] = pairRows[row.pairKey] || [];
+          pairRows[row.pairKey].push(row);
         });
-        Object.values(pairDates).forEach(dates => {
-          if (dates.length > 1 && matchDayGap(dates[0], dates[1]) < Number(c.doubleGapDays)) {
-            warnings.push(`雙循環相同對戰間隔小於 ${c.doubleGapDays} 個中間比賽日`);
+        Object.values(pairRows).forEach(rows => {
+          if (rows.length > 1 && matchDayGap(rows[0].date, rows[1].date) < Number(c.doubleGapDays)) {
+            warnings.push(`${slotLabel(rows[1])}：${rows[1].left} vs ${rows[1].right} 與 ${slotLabel(rows[0])} 的相同對戰間隔小於 ${c.doubleGapDays} 個中間比賽日`);
           }
         });
       }
@@ -1891,7 +1893,7 @@
         const firstRoundLastIndex = Math.max(...schedule.map((row, index) => Number(row.round) === 1 ? index : -1));
         const secondRoundFirstIndex = schedule.findIndex(row => Number(row.round) === 2);
         if (secondRoundFirstIndex !== -1 && firstRoundLastIndex > secondRoundFirstIndex) {
-          warnings.push("雙循環賽程中第二輪出現在第一輪全部完成之前");
+          warnings.push(`${slotLabel(schedule[secondRoundFirstIndex])}：第二輪出現在第一輪全部完成之前，第一輪最後一場為 ${slotLabel(schedule[firstRoundLastIndex])}`);
         }
       }
       if (c.limitNextDayMatch1 && (c.nextDayTeams || []).length) {
@@ -1899,14 +1901,14 @@
           (c.nextDayTeams || []).forEach(team => {
             if (![row.left, row.right].includes(team)) return;
             const yesterday = addDays(row.date, -1);
-            const playedYesterday = schedule.some(item => item.date === yesterday && [item.left, item.right].includes(team));
-            if (playedYesterday && Number(row.match) !== 1) warnings.push(`${team} 連續出賽第二天未安排在 Match1`);
+            const yesterdayRow = schedule.find(item => item.date === yesterday && [item.left, item.right].includes(team));
+            if (yesterdayRow && Number(row.match) !== 1) warnings.push(`${slotLabel(row)}：${team} 連續出賽第二天未安排在 Match1，前一天為 ${slotLabel(yesterdayRow)}`);
           });
         });
       }
       if (c.limitMatchBalance) {
         const diff = projectedMatchBalanceDiff(schedule);
-        if (diff > Number(c.matchBalanceTolerance || 2)) warnings.push(`各 Match 出賽次數最大差距為 ${diff}，超過容許 +- ${c.matchBalanceTolerance || 2}`);
+        if (diff > Number(c.matchBalanceTolerance || 2)) warnings.push(`各 Match 出賽次數最大差距為 ${diff}，超過容許 +- ${c.matchBalanceTolerance || 2}；請查看「各 Match 出賽次數」表格中差距最大的 Match 欄位`);
       }
       (c.customRules || []).forEach(rule => {
         warnings.push(`自訂需求${rule.level === "required" ? "（必要）" : "（盡量達成）"}：${[
@@ -1921,6 +1923,37 @@
 
     function maxWeeklyStreakForTeams(schedule, teams) {
       return Math.max(...teams.map(team => weeklyStreak(schedule.filter(row => [row.left, row.right].includes(team)).map(row => row.date)).max), 0);
+    }
+
+    function slotLabel(row) {
+      return `${row.date} Match${row.match}`;
+    }
+
+    function weeklyStreakRows(rows) {
+      const byDate = new Map();
+      rows.forEach(row => {
+        const current = byDate.get(row.date);
+        if (!current || Number(row.match) < Number(current.match)) byDate.set(row.date, row);
+      });
+      const uniqueRows = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+      const weeks = new Map();
+      uniqueRows.forEach(row => {
+        const key = weekKey(row.date);
+        weeks.set(key, weeks.get(key) || []);
+        weeks.get(key).push(row);
+      });
+      let bestRows = [];
+      weeks.forEach(weekRows => {
+        let currentRows = weekRows.length ? [weekRows[0]] : [];
+        for (let index = 1; index < weekRows.length; index++) {
+          currentRows = daysBetween(weekRows[index - 1].date, weekRows[index].date) === 1
+            ? [...currentRows, weekRows[index]]
+            : [weekRows[index]];
+          if (currentRows.length > bestRows.length) bestRows = currentRows;
+        }
+        if (currentRows.length > bestRows.length) bestRows = currentRows;
+      });
+      return { max: bestRows.length, rows: bestRows };
     }
 
     function weeklyStreak(dates) {
